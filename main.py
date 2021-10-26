@@ -39,8 +39,8 @@ class Player(pygame.sprite.Sprite):
 		dx = 0
 		dy = 0
 		key = pygame.key.get_pressed()
-		if key[pygame.K_SPACE] and self.jumped == False:
-			self.vel_y = -22
+		if (key[pygame.K_SPACE] or key[pygame.K_UP]) and self.jumped == False:
+			self.vel_y = -20
 			self.jumped = True
 		if key[pygame.K_SPACE] == False:
 			self.jumped = False
@@ -89,7 +89,7 @@ class Player(pygame.sprite.Sprite):
 
 
 
-class BKG_objet(pygame.sprite.Sprite):
+class Objet(pygame.sprite.Sprite):
 	def __init__(self, x, y, width, height, img_path):
 		pygame.sprite.Sprite.__init__(self)
 		self.width = width
@@ -117,14 +117,53 @@ class Pumpkin(pygame.sprite.Sprite):
 		screen.blit(self.image, self.rect)
 
 player = Player(200,520)
-objects = [] 
-objects.append(BKG_objet(0, 600, WIDTH, 200, 'images/block.png'))
-objects.append(BKG_objet(600,400, 100, 200, 'images/block.png'))
-objects.append(BKG_objet(1300, 200, 100, 100, 'images/block.png'))
+objects = []
 pumpkins = []
-pumpkins.append(Pumpkin(1350, 150))
+pumpkins.append(Pumpkin(10,10)) # just a token for points tracking purpose
 pumpkin_ctr = 0
-pumpkin_token = Pumpkin(10,10)
+#objects.append(BKG_objet(0, 600, WIDTH, 200, 'images/block.png'))
+#objects.append(BKG_objet(600,400, 100, 200, 'images/block.png'))
+#objects.append(BKG_objet(1300, 200, 100, 100, 'images/block.png'))
+
+levels = ['']
+
+level1 = [
+	'XXXXXXXXXXXXXXXXXX',
+	'                  ',
+	'               P  ',
+	'            XXXXX ',
+	'         XXXX     ',
+	'                  ',
+	'                  ',
+	'XXXXXXXXXXXXXXXXXX'
+]
+
+level2 = [
+	'XXXXXXXXXXXXXXXXXX',
+	'                  ',
+	'     XXXP         ',
+	'        X         ',
+	'                  ',
+	'            XX    ',
+	'            XX    ',
+	'XXXXXXXXXXXXXXXXXX'
+]
+
+levels.append(level1)
+
+def setup_levels(level):
+	for j in range(len(level)):
+		for i in range(len(level[j])):
+			c = level[j][i]
+			screen_x = 100*i
+			screen_y = 100*j
+			if c == 'X':
+				objects.append(Objet(screen_x, screen_y, 100, 100, 'images/block.png'))
+			if c == 'P':
+				pumpkins.append(Pumpkin(screen_x + 50, screen_y + 50)) # add 50 so that the pumpkin stays on the ground
+
+
+setup_levels(level1)
 
 run = True
 while run:
@@ -137,11 +176,11 @@ while run:
 		object.draw()
 
 	player.update()
-	pumpkin_token.draw()
 
 	for pumpkin in pumpkins:
 		if pygame.Rect.colliderect(player.rect, pumpkin.rect):
-			pumpkin.rect.y = 900
+			pumpkin.rect.y = 10
+			pumpkin.rect.x = 10
 			pumpkin_ctr += 1
 		text = myfont.render(': {}'.format(pumpkin_ctr), False, 'black')
 		screen.blit(text, (57, 20))	
