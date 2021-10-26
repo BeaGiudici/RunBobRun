@@ -20,12 +20,12 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
 # Creating player class
 class Player(pygame.sprite.Sprite):
-	def __init__(self, x, y):
+	def __init__(self):
 		img = pygame.image.load('images/ghost_right.png')
 		self.image = pygame.transform.scale(img, (player_width,player_height))
 		self.rect = self.image.get_rect()
-		self.rect.x = x
-		self.rect.y = y
+		#self.rect.x = x
+		#self.rect.y = y
 		self.vel_y = 0
 		self.jumped = False
 	
@@ -81,8 +81,8 @@ class Player(pygame.sprite.Sprite):
 		#Check if the player reaches the borders
 		if (self.rect.x < 0):
 			self.rect.x = 0
-		elif (self.rect.x > WIDTH - player_width):
-			self.rect.x = WIDTH - player_width
+		#elif (self.rect.x > WIDTH - player_width):
+		#	self.rect.x = WIDTH - player_width
 
 		screen.blit(self.image, self.rect)
 
@@ -116,14 +116,43 @@ class Pumpkin(pygame.sprite.Sprite):
 	def draw(self):
 		screen.blit(self.image, self.rect)
 
-player = Player(200,520)
+class Enemy(pygame.sprite.Sprite):
+	def __init__(self, x, y):
+		pygame.sprite.Sprite.__init__(self)
+		img = pygame.image.load('images/unicorn_right.png')
+		self.image = pygame.transform.scale(img, (70, 50))
+		self.rect = self.image.get_rect()
+		self.rect.x = x
+		self.rect.y = y
+		self.direction = 'right'		
+	
+	def update(self):
+		if self.direction == 'right':
+			dx = 10
+		elif self.direction == 'left':
+			dx = -10
+		#Check if there are collision with objects or boundaries
+		for object in objects:
+			if (object.rect.colliderect(self.rect.x + dx, self.rect.y, 70, 50) and self.direction == 'right') or (self.rect.x + 70 + dx >= WIDTH):
+				self.direction = 'left'
+				img = pygame.image.load('images/unicorn_left.png')
+				self.image = pygame.transform.scale(img, (70, 50))
+				dx = 0
+			elif (object.rect.colliderect(self.rect.x + dx, self.rect.y, 70, 50) and self.direction == 'left') or (self.rect.x + dx <= 0):
+				self.direction = 'right'
+				img = pygame.image.load('images/unicorn_right.png')
+				self.image = pygame.transform.scale(img, (70, 50))
+				dx = 0
+
+		self.rect.x += dx
+		screen.blit(self.image, self.rect)
+		
+player = Player()
 objects = []
 pumpkins = []
+enemies = []
 pumpkins.append(Pumpkin(10,10)) # just a token for points tracking purpose
 pumpkin_ctr = 0
-#objects.append(BKG_objet(0, 600, WIDTH, 200, 'images/block.png'))
-#objects.append(BKG_objet(600,400, 100, 200, 'images/block.png'))
-#objects.append(BKG_objet(1300, 200, 100, 100, 'images/block.png'))
 
 levels = ['']
 
@@ -134,24 +163,26 @@ level1 = [
 	'            XXXXX ',
 	'         XXXX     ',
 	'                  ',
-	'                  ',
-	'XXXXXXXXXXXXXXXXXX'
-]
-
-level2 = [
-	'XXXXXXXXXXXXXXXXXX',
-	'                  ',
-	'     XXXP         ',
-	'        X         ',
-	'                  ',
-	'            XX    ',
-	'            XX    ',
+	'G             E   ',
 	'XXXXXXXXXXXXXXXXXX'
 ]
 
 levels.append(level1)
 
-def setup_levels(level):
+level2 = [
+	'XXXXXXXXXXXXXXXXXX',
+	'                  ',
+	'     XXXP         ',
+	'       XX         ',
+	'                  ',
+	'            XX    ',
+	'G           XX    ',
+	'XXXXXXXXXXXXXXXXXX'
+]
+
+levels.append(level2)
+
+def setup_level(level):
 	for j in range(len(level)):
 		for i in range(len(level[j])):
 			c = level[j][i]
@@ -161,9 +192,32 @@ def setup_levels(level):
 				objects.append(Objet(screen_x, screen_y, 100, 100, 'images/block.png'))
 			if c == 'P':
 				pumpkins.append(Pumpkin(screen_x + 50, screen_y + 50)) # add 50 so that the pumpkin stays on the ground
+			if c == 'G':
+				player.rect.x = screen_x + 10
+				player.rect.y = screen_y + 10
+			if c == 'E':
+				enemies.append(Enemy(screen_x, screen_y + 50))
 
+def destroy_level(objects, pumpkins):
+	for object in objects:
+		object.rect.y = 700
+	for pumpkin in pumpkins:
+		pumpkin.rect.x = 10
+		pumpkin.rect.y = 10
+	for enemy in enemies:
+		enemy.rect.x = 2000
+		enemy.y = 900
+		
 
-setup_levels(level1)
+def setup_initial_screen(level):
+	player = Player()
+	objects = []
+	pumpkins = []
+	pumpkins.append(Pumpkin(10,10)) # just a token for points tracking purpose
+	setup_level(level)
+
+setup_initial_screen(level1)
+pumpkin_ctr = 0
 
 run = True
 while run:
@@ -171,9 +225,17 @@ while run:
 		if event.type == pygame.QUIT:
 			run = False
 	
-	screen.fill('pink')	
+	screen.fill('pink')
+	
+	if player.rect.y + player_width / 2.0 >= WIDTH:
+		destroy_level(objects, pumpkins)
+		setup_initial_screen(level2)
+	
 	for object in objects:
 		object.draw()
+
+	for enemy in enemies:
+		enemy.update()
 
 	player.update()
 
@@ -186,8 +248,7 @@ while run:
 		screen.blit(text, (57, 20))	
 		pumpkin.draw()
 
-	
-	pygame.display.update()
+	pygame.display.flip()
 
 	# Set the FPS
 	clock.tick(30)
