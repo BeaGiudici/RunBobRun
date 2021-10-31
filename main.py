@@ -42,11 +42,11 @@ class Player(pygame.sprite.Sprite):
 		if key[pygame.K_LEFT]:
 			img = pygame.image.load('images/ghost_left.png')
 			self.image = pygame.transform.scale(img, (player_width,player_height))
-			dx -= 5
+			dx -= 10
 		elif key[pygame.K_RIGHT]:
 			img = pygame.image.load('images/ghost_right.png')
 			self.image = pygame.transform.scale(img, (player_width,player_height))
-			dx += 5
+			dx += 10
 
 		
 		# Add gravity
@@ -99,11 +99,11 @@ class Objet(pygame.sprite.Sprite):
 	def draw(self):
 		screen.blit(self.image, self.rect)
 
-class Pumpkin(pygame.sprite.Sprite):
+class Friend(pygame.sprite.Sprite):
 	def __init__(self, x, y):
 		pygame.sprite.Sprite.__init__(self)
-		img = pygame.image.load('images/pumpkin.png')
-		self.image = pygame.transform.scale(img, (50,50))
+		img = pygame.image.load('images/friend.png')
+		self.image = pygame.transform.scale(img, (60,80))
 		self.rect = self.image.get_rect()
 		self.rect.x = x
 		self.rect.y = y
@@ -125,9 +125,9 @@ class Enemy(pygame.sprite.Sprite):
 
 	def update(self):
 		if self.direction == 'right':
-			dx = 2
+			dx = 5
 		elif self.direction == 'left':
-			dx = -2
+			dx = -5
 		#Check if there are collision with objects or boundaries
 		for object in objects:
 			if (object.rect.colliderect(self.rect.x + dx, self.rect.y, 70, 50) and self.direction == 'right') or (self.rect.x + 70 + dx >= self.xmax):
@@ -146,17 +146,16 @@ class Enemy(pygame.sprite.Sprite):
 		
 player = Player()
 objects = pygame.sprite.Group()
-pumpkins = pygame.sprite.Group()
+friends = pygame.sprite.Group()
 enemies = pygame.sprite.Group()
-pumpkins.add(Pumpkin(10,10)) # just a token for points tracking purpose
-pumpkin_ctr = 0
+ctr = 0
 
 levels = ['']
 
 level1 = [
 	'XXXXXXXXXXXXXXXXXX',
 	'                  ',
-	'               P  ',
+	'               F  ',
 	'           EXXXXX ',
 	'         XXXX     ',
 	'                  ',
@@ -169,7 +168,7 @@ level1 = [
 level2 = [
 	'XXXXXXXXXXXXXXXXXX',
 	'                  ',
-	'     XXXP         ',
+	'     XXXF         ',
 	'       XX         ',
 	'                  ',
 	'            XX    ',
@@ -181,8 +180,8 @@ levels.append(level2)
 
 level3 = [
 	'XXXXXXXXXXXXXXXXXX',
-	'                  ',
-	'     XXXPX        ',
+	'     X            ',
+	'     XXXFX        ',
 	'       XXX        ',
 	'                  ',
 	'            XX    ',
@@ -200,26 +199,27 @@ def setup_level(level):
 			screen_y = 100*j
 			if c == 'X':
 				objects.add(Objet(screen_x, screen_y, 100, 100, 'images/block.png'))
-			if c == 'P':
-				pumpkins.add(Pumpkin(screen_x + 50, screen_y + 50)) # add 50 so that the pumpkin stays on the ground
+			if c == 'F':
+				friends.add(Friend(screen_x, screen_y + 20)) # add 50 so that the pumpkin stays on the ground
 			if c == 'G':
 				player.rect.x = screen_x + 10
 				player.rect.y = screen_y + 10
 			if c == 'E':
 				enemies.add(Enemy(screen_x, screen_y + 50, screen_x - 200, screen_x + 200))
 
-def destroy_level(objects, pumpkins, enemies):
+def destroy_level(objects, friends, enemies):
 	objects.empty()
-	pumpkins.empty()
+	friends.empty()
 	enemies.empty()
 		
 
 def setup_initial_screen(level):
-	pumpkins.add(Pumpkin(10,10)) # just a token for points tracking purpose
+	friends.add(Friend(10,10)) # just a token for points tracking purpose
 	setup_level(level)
 
 setup_initial_screen(level1)
 pumpkin_ctr = 0
+k = 0
 
 run = True
 while run:
@@ -229,36 +229,38 @@ while run:
 	
 	screen.fill('pink')
 	
-	for level in levels:
-		if player.rect.x + player_width / 2.0 >= WIDTH:
-			destroy_level(objects, pumpkins, enemies)
-			setup_initial_screen(level)
-			pygame.display.update()
-		
-		else:
-			for object in objects:
-				object.draw()
+	if player.rect.x + player_width / 2.0 >= WIDTH:
+		k += 1
+		if k == len(levels):
+			run = False
+		destroy_level(objects, friends, enemies)
+		setup_initial_screen(levels[k])
+		pygame.display.update()
+	
+	else:
+		for object in objects:
+			object.draw()
 
-			for enemy in enemies:
-				# Check for collisions with the player
-				if pygame.Rect.colliderect(player.rect, enemy.rect):
-					screen.fill('pink')
-					destroy_level(objects, pumpkins, enemies)
-					run = False
-				enemy.update()
+		for enemy in enemies:
+			# Check for collisions with the player
+			if pygame.Rect.colliderect(player.rect, enemy.rect):
+				screen.fill('pink')
+				destroy_level(objects, friends, enemies)
+				run = False
+			enemy.update()
 
-			player.update()
+		player.update()
 
-			for pumpkin in pumpkins:
-				if pygame.Rect.colliderect(player.rect, pumpkin.rect):
-					pumpkin.rect.y = 10
-					pumpkin.rect.x = 10
-					pumpkin_ctr += 1
-				text = myfont.render(': {}'.format(pumpkin_ctr), False, 'black')
-				screen.blit(text, (57, 20))	
-				pumpkin.draw()
+		for friend in friends:
+			if pygame.Rect.colliderect(player.rect, friend.rect):
+				friend.rect.y = 10
+				friend.rect.x = 10
+				ctr += 1
+			text = myfont.render(': {}'.format(ctr), False, 'black')
+			screen.blit(text, (65, 20))	
+			friend.draw()
 
-			pygame.display.update()
+		pygame.display.update()
 		
 	# Set the FPS
 	clock.tick(30)
